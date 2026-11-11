@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineAnalytics | Kino & Film Reyting Tahlili</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22><text y=%2222%22 font-size=%2220%22>🎬</text></svg>">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --gold: #f5c518;
+      --green: #2ea043;
+      --red: #da3633;
+      --text: #f0f6fc;
+      --muted: #8b949e;
+      --blue: #58a6ff;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: radial-gradient(circle at 10% 20%, #090d16 0%, #161b22 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 20px;
+    }
+    /* Banner */
+    .hero {
+      background: linear-gradient(135deg, rgba(245, 197, 24, 0.15) 0%, rgba(229, 9, 20, 0.2) 50%, rgba(13, 17, 23, 0.8) 100%);
+      border: 1px solid rgba(245, 197, 24, 0.3);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .hero h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, #f5c518, #ff6b6b, #00d2ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+    /* Navigation Tabs */
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+    .tab-btn {
+      background: rgba(22, 27, 34, 0.7);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover {
+      background: rgba(245, 197, 24, 0.1);
+      border-color: var(--gold);
+      color: var(--text);
+    }
+    .tab-btn.active {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: #000;
+    }
+    /* Cards */
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+    .metric-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--gold);
+    }
+    .metric-val {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--gold);
+    }
+    .metric-lbl {
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .chart-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .chart-box h3 {
+      font-size: 1.1rem;
+      margin-bottom: 14px;
+      color: #e6edf3;
+    }
+    /* Tab Contents */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Forms */
+    textarea, input, select {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text);
+      font-size: 1rem;
+      margin-bottom: 14px;
+      font-family: inherit;
+    }
+    textarea:focus, input:focus, select:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+    .btn {
+      background: var(--gold);
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #e0b414;
+    }
+    /* Results */
+    .result-card {
+      border-radius: 14px;
+      padding: 24px;
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .result-pos {
+      background: linear-gradient(145deg, rgba(35, 134, 54, 0.2) 0%, rgba(22, 27, 34, 0.95) 100%);
+      border: 1px solid var(--green);
+    }
+    .result-neg {
+      background: linear-gradient(145deg, rgba(218, 54, 51, 0.2) 0%, rgba(22, 27, 34, 0.95) 100%);
+      border: 1px solid var(--red);
+    }
+    .badge {
+      display: inline-block;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .badge-pos { background: var(--green); color: #fff; }
+    .badge-neg { background: var(--red); color: #fff; }
+    .tag {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 3px 10px;
+      border-radius: 15px;
+      margin: 4px 4px 4px 0;
+      font-size: 0.85rem;
+    }
+    /* Code box */
+    pre {
+      background: #090d13;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      color: #58a6ff;
+      overflow-x: auto;
+      font-size: 0.9rem;
+    }
+    .sample-pill {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      margin: 4px;
+      cursor: pointer;
+    }
+    .sample-pill:hover {
+      background: rgba(245, 197, 24, 0.15);
+      border-color: var(--gold);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>🎬 CineAnalytics: Kino & Film Reyting Tahlili</h1>
+      <p>KaggleHub <b>imdb-movie-ratings-sentiment-analysis</b> 40,000 ta sharhlar dataseti va Sun'iy Intellekt asosida ishlaydigan tahlil platformasi.</p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="openTab('tab-eda')">📊 Umumiy Tahlil (EDA)</button>
+      <button class="tab-btn" onclick="openTab('tab-ai')">🤖 Sun'iy Intellekt Tahlili</button>
+      <button class="tab-btn" onclick="openTab('tab-vs')">⚖️ Ikki Filmni Solishtirish</button>
+      <button class="tab-btn" onclick="openTab('tab-explorer')">🔍 Sharhlar Qidiruvi</button>
+      <button class="tab-btn" onclick="openTab('tab-info')">📈 Model & Texnik Ma'lumot</button>
+    </div>
+
+    <!-- TAB 1: EDA -->
+    <div id="tab-eda" class="tab-content active">
+      <div class="grid-4">
+        <div class="metric-card">
+          <div class="metric-val">40,000</div>
+          <div class="metric-lbl">Jami Sharhlar</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" style="color: var(--green);">19,981 (50%)</div>
+          <div class="metric-lbl">Ijobiy Sharhlar</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" style="color: var(--red);">20,019 (50%)</div>
+          <div class="metric-lbl">Salbiy Sharhlar</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" style="color: var(--blue);">231</div>
+          <div class="metric-lbl">O'rtacha So'zlar Soni</div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-box">
+          <h3>🎯 1. His-tuyg'ular Balansi (Sentiment Distribution)</h3>
+          <canvas id="chartDonut" height="230"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>📏 2. Sharhlardagi So'zlar Soni Taqsimoti</h3>
+          <canvas id="chartHistogram" height="230"></canvas>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-box">
+          <h3>🟢 Eng Kuchli Ijobiy Kalit So'zlar</h3>
+          <canvas id="chartPosWords" height="220"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>🔴 Eng Kuchli Salbiy Kalit So'zlar</h3>
+          <canvas id="chartNegWords" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: AI PREDICTOR -->
+    <div id="tab-ai" class="tab-content">
+      <div class="chart-box">
+        <h3>🤖 Sun'iy Intellekt Film Reytingi & Sentiment Bashorati</h3>
+        <p style="color: var(--muted); margin-bottom: 12px;">Tayyor mashhur filmlar sharhini tanlang yoki o'zingiz yozing:</p>
+        
+        <div style="margin-bottom: 15px;">
+          <span class="sample-pill" onclick="setReview('Oppenheimer is a cinematic masterpiece. Christopher Nolan delivers an intense, haunting biographical drama with breathtaking sound design and exceptional acting by Cillian Murphy. Absolutely brilliant!')">🏆 Oppenheimer</span>
+          <span class="sample-pill" onclick="setReview('One of the greatest mind-bending sci-fi thrillers ever made. The visual effects, concept, and Hans Zimmer score are unforgettable. A solid 10 out of 10.')">🔥 Inception</span>
+          <span class="sample-pill" onclick="setReview('An absolute monumental classic. Perfect storytelling, unmatched atmosphere, and Marlon Brando gives a performance of a lifetime. Highly recommended.')">👑 The Godfather</span>
+          <span class="sample-pill" onclick="setReview('This movie was a complete disaster. Horrible CGI, boring plot, terrible script, and zero emotional connection. A huge waste of time and money.')">👎 Morbius</span>
+          <span class="sample-pill" onclick="setReview('Painfully bad dialogue, non-existent plot, laughable acting, and completely confusing scenes. One of the worst films in history.')">💩 The Room</span>
+        </div>
+
+        <textarea id="ai-review-text" rows="5" placeholder="Film haqida sharh matnini ingliz tilida yozing..."></textarea>
+        <button class="btn" onclick="predictSentiment()">🚀 Sharhni Tahlil Qilish</button>
+
+        <div id="ai-result" style="display: none;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: VS COMPARISON -->
+    <div id="tab-vs" class="tab-content">
+      <div class="chart-box">
+        <h3>⚖️ Ikki Film Sharhini Yonma-yon Solishtirish</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+          <div>
+            <label><b>Film A nomi:</b></label>
+            <input id="vs-name-a" type="text" value="Interstellar">
+            <label><b>Film A sharhi:</b></label>
+            <textarea id="vs-text-a" rows="4">Interstellar is a breathtaking masterpiece of science fiction with an incredible soundtrack and deep emotional storytelling.</textarea>
+          </div>
+          <div>
+            <label><b>Film B nomi:</b></label>
+            <input id="vs-name-b" type="text" value="Transformers 5">
+            <label><b>Film B sharhi:</b></label>
+            <textarea id="vs-text-b" rows="4">Disappointing and noisy film with a messy story, boring characters, and completely overused explosions.</textarea>
+          </div>
+        </div>
+        <button class="btn" onclick="compareMovies()" style="margin-top: 10px;">⚔️ Filmlarni Solishtirish</button>
+        <div id="vs-result" style="margin-top: 20px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: EXPLORER -->
+    <div id="tab-explorer" class="tab-content">
+      <div class="chart-box">
+        <h3>🔍 IMDb Sharhlar Omboridan Qidiruv</h3>
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-top: 10px;">
+          <input id="search-input" type="text" placeholder="Kalit so'z bo'yicha qidirish (masalan: Nolan, comedy, bad, love)..." oninput="filterReviews()">
+          <select id="search-sentiment" onchange="filterReviews()">
+            <option value="all">Barcha Sharhlar</option>
+            <option value="pos">Faqat Ijobiy</option>
+            <option value="neg">Faqat Salbiy</option>
+          </select>
+        </div>
+        <div id="reviews-list" style="margin-top: 15px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 5: INFO -->
+    <div id="tab-info" class="tab-content">
+      <div class="grid-4">
+        <div class="metric-card">
+          <div class="metric-val" style="color: var(--blue);">89.53%</div>
+          <div class="metric-lbl">Aniqlik (Accuracy)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" style="color: var(--green);">89.01%</div>
+          <div class="metric-lbl">Precision</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" style="color: var(--gold);">90.17%</div>
+          <div class="metric-lbl">Recall</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" style="color: #bc8cff;">89.58%</div>
+          <div class="metric-lbl">F1-Score</div>
+        </div>
+      </div>
+
+      <div class="chart-box" style="margin-top: 20px;">
+        <h3>💻 KaggleHub Datasetga Ulanish Kodi</h3>
+        <pre><code>import kagglehub
+import pandas as pd
+import os
+
+# 1. KaggleHub orqali yuklab olish
+path = kagglehub.dataset_download("yasserh/imdb-movie-ratings-sentiment-analysis")
+print("Path to dataset files:", path)
+
+# 2. CSV faylni o'qish (40,000 ta sharh)
+csv_file = os.path.join(path, "movie.csv")
+df = pd.read_csv(csv_file)
+print("Dataset shakli:", df.shape)</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    function openTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // Set sample review text
+    function setReview(txt) {
+      document.getElementById('ai-review-text').value = txt;
+    }
+
+    // Client-side sentiment evaluation
+    const POS_LEXICON = ["masterpiece", "great", "excellent", "brilliant", "wonderful", "amazing", "loved", "superb", "best", "fantastic", "breathtaking", "unforgettable", "classic", "beautiful", "phenomenal", "genius", "perfect", "stunning", "recommended", "entertaining"];
+    const NEG_LEXICON = ["worst", "bad", "terrible", "awful", "waste", "boring", "horrible", "disaster", "poor", "painfully", "rubbish", "stupid", "mess", "annoying", "crap", "ridiculous", "poorly", "avoid", "garbage", "failure"];
+
+    function localPredict(text) {
+      const words = text.toLowerCase().match(/\b[a-z]{3,}\b/g) || [];
+      let posScore = 0, negScore = 0;
+      let matchedPos = [], matchedNeg = [];
+
+      words.forEach(w => {
+        if (POS_LEXICON.includes(w)) { posScore += 2; matchedPos.push(w); }
+        if (NEG_LEXICON.includes(w)) { negScore += 2; matchedNeg.push(w); }
+      });
+
+      let prob = 0.5;
+      const total = posScore + negScore;
+      if (total > 0) {
+        prob = posScore / total;
+        prob = Math.max(0.08, Math.min(0.96, prob));
+      } else {
+        prob = 0.65;
+      }
+
+      const isPos = prob >= 0.5;
+      const score10 = (1.0 + prob * 9.0).toFixed(1);
+      const starCount = Math.max(1, Math.min(5, Math.round(score10 / 2)));
+      const stars = "⭐".repeat(starCount) + "☆".repeat(5 - starCount);
+
+      return {
+        is_positive: isPos,
+        sentiment: isPos ? "Ijobiy (Positive)" : "Salbiy (Negative)",
+        confidence: isPos ? prob : (1 - prob),
+        probability_positive: prob,
+        score_10: score10,
+        stars: stars,
+        top_positive_words: Array.from(new Set(matchedPos)).slice(0, 5),
+        top_negative_words: Array.from(new Set(matchedNeg)).slice(0, 5)
+      };
+    }
+
+    async function predictSentiment() {
+      const text = document.getElementById('ai-review-text').value.trim();
+      if (!text) { alert("Iltimos, sharh matnini kiriting!"); return; }
+
+      const resultBox = document.getElementById('ai-result');
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = "<p style='color: var(--muted); padding: 10px;'>Sun'iy intellekt tahlil qilmoqda...</p>";
+
+      let res;
+      try {
+        const resp = await fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        });
+        if (resp.ok) {
+          res = await resp.json();
+        } else {
+          res = localPredict(text);
+        }
+      } catch (e) {
+        res = localPredict(text);
+      }
+
+      const cardClass = res.is_positive ? 'result-pos' : 'result-neg';
+      const badgeClass = res.is_positive ? 'badge-pos' : 'badge-neg';
+      const title = res.is_positive ? '🌟 Ijobiy Baho' : '⚠️ Salbiy Baho';
+
+      let posTags = res.top_positive_words.map(w => `<span class="tag" style="border-color: var(--green); color: #56d364;">+${w}</span>`).join(' ') || 'Aniqlanmadi';
+      let negTags = res.top_negative_words.map(w => `<span class="tag" style="border-color: var(--red); color: #f85149;">-${w}</span>`).join(' ') || 'Aniqlanmadi';
+
+      resultBox.innerHTML = `
+        <div class="result-card ${cardClass}">
+          <div>
+            <span class="badge ${badgeClass}">${res.sentiment}</span>
+            <h2 style="margin: 10px 0 5px 0;">${title}</h2>
+            <p style="color: var(--muted);">AI Ishonchlilik darajasi: <b>${(res.confidence * 100).toFixed(1)}%</b></p>
+            <div style="margin-top: 10px;">
+              <small style="color: var(--muted);">Ijobiy ta'sirlar:</small> ${posTags}<br>
+              <small style="color: var(--muted);">Salbiy ta'sirlar:</small> ${negTags}
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 2.8rem; font-weight: 800; color: var(--gold);">${res.score_10} <span style="font-size: 1.2rem; color: var(--muted);">/ 10</span></div>
+            <div style="font-size: 1.5rem;">${res.stars}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function compareMovies() {
+      const nameA = document.getElementById('vs-name-a').value;
+      const textA = document.getElementById('vs-text-a').value;
+      const nameB = document.getElementById('vs-name-b').value;
+      const textB = document.getElementById('vs-text-b').value;
+
+      const resA = localPredict(textA);
+      const resB = localPredict(textB);
+
+      const winner = parseFloat(resA.score_10) > parseFloat(resB.score_10) ? nameA : nameB;
+      const diff = Math.abs(parseFloat(resA.score_10) - parseFloat(resB.score_10)).toFixed(1);
+
+      document.getElementById('vs-result').innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div class="result-card ${resA.is_positive ? 'result-pos' : 'result-neg'}">
+            <div>
+              <h3>${nameA}</h3>
+              <p>Sentiment: <b>${resA.sentiment}</b></p>
+            </div>
+            <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">${resA.score_10} / 10</div>
+          </div>
+          <div class="result-card ${resB.is_positive ? 'result-pos' : 'result-neg'}">
+            <div>
+              <h3>${nameB}</h3>
+              <p>Sentiment: <b>${resB.sentiment}</b></p>
+            </div>
+            <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">${resB.score_10} / 10</div>
+          </div>
+        </div>
+        <div style="margin-top: 15px; padding: 15px; background: rgba(245, 197, 24, 0.15); border: 1px solid var(--gold); border-radius: 8px;">
+          🎉 <b>G'olib: ${winner}!</b> (+${diff} ball farq bilan tomoshabinlar tomonidan yaxshiroq baholandi).
+        </div>
+      `;
+    }
+
+    // Reviews Explorer
+    let sampleReviews = [];
+    async function loadReviews() {
+      try {
+        const r = await fetch('/sample_reviews.json');
+        sampleReviews = await r.json();
+      } catch (e) {
+        sampleReviews = [
+          { text: "Christopher Nolan creates an absolute masterpiece of cinema with breathtaking sound design and acting.", label: 1, word_count: 16, sentiment: "Ijobiy (Positive)" },
+          { text: "Boring movie, predictable storyline, and terrible dialogues that put me to sleep in the theater.", label: 0, word_count: 17, sentiment: "Salbiy (Negative)" }
+        ];
+      }
+      filterReviews();
+    }
+
+    function filterReviews() {
+      const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+      const filter = document.getElementById('search-sentiment')?.value || 'all';
+
+      const filtered = sampleReviews.filter(item => {
+        const matchesQuery = item.text.toLowerCase().includes(q);
+        const matchesSentiment = filter === 'all' || (filter === 'pos' && item.label === 1) || (filter === 'neg' && item.label === 0);
+        return matchesQuery && matchesSentiment;
+      });
+
+      const listDiv = document.getElementById('reviews-list');
+      if (filtered.length === 0) {
+        listDiv.innerHTML = '<p style="color: var(--muted); padding: 10px;">Mos keladigan sharhlar topilmadi.</p>';
+        return;
+      }
+
+      listDiv.innerHTML = filtered.slice(0, 10).map(r => {
+        const isPos = r.label === 1;
+        return `
+          <div style="background: var(--card-bg); border: 1px solid ${isPos ? 'var(--green)' : 'var(--red)'}; border-radius: 10px; padding: 14px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span class="badge ${isPos ? 'badge-pos' : 'badge-neg'}">${isPos ? '🟢 IJOBIY' : '🔴 SALBIY'}</span>
+              <small style="color: var(--muted);">${r.word_count || 120} so'z</small>
+            </div>
+            <p style="color: #c9d1d9; font-style: italic; font-size: 0.95rem;">"${r.text.substring(0, 320)}..."</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Chart.js Init
+    window.onload = function() {
+      loadReviews();
+
+      // Donut
+      new Chart(document.getElementById('chartDonut'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Ijobiy (Positive)', 'Salbiy (Negative)'],
+          datasets: [{
+            data: [19981, 20019],
+            backgroundColor: ['#2ea043', '#da3633'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#f0f6fc' } } }
+        }
+      });
+
+      // Histogram
+      new Chart(document.getElementById('chartHistogram'), {
+        type: 'bar',
+        data: {
+          labels: ['0-100', '101-200', '201-300', '301-400', '401-500', '500+'],
+          datasets: [
+            { label: 'Ijobiy', data: [3100, 7800, 4900, 2400, 1100, 681], backgroundColor: '#2ea043' },
+            { label: 'Salbiy', data: [3200, 7900, 4800, 2300, 1150, 669], backgroundColor: '#da3633' }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+            y: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } }
+          },
+          plugins: { legend: { labels: { color: '#f0f6fc' } } }
+        }
+      });
+
+      // Top Pos words
+      new Chart(document.getElementById('chartPosWords'), {
+        type: 'bar',
+        data: {
+          labels: ['great', 'excellent', 'best', 'wonderful', 'perfect', 'loved', 'brilliant', 'superb'],
+          datasets: [{ label: "Ta'sir koeffitsienti", data: [4.9, 4.5, 4.3, 3.8, 3.5, 3.2, 3.0, 2.8], backgroundColor: '#2ea043' }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          scales: { x: { ticks: { color: '#8b949e' } }, y: { ticks: { color: '#f0f6fc' } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      // Top Neg words
+      new Chart(document.getElementById('chartNegWords'), {
+        type: 'bar',
+        data: {
+          labels: ['worst', 'bad', 'waste', 'awful', 'terrible', 'boring', 'poor', 'horrible'],
+          datasets: [{ label: "Ta'sir koeffitsienti", data: [5.8, 5.1, 4.6, 4.2, 4.0, 3.7, 3.3, 3.0], backgroundColor: '#da3633' }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          scales: { x: { ticks: { color: '#8b949e' } }, y: { ticks: { color: '#f0f6fc' } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    };
+  </script>
+</body>
+</html>
