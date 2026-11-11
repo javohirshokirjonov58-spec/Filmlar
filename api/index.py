@@ -1,36 +1,87 @@
 import json
 import os
 import sys
+import re
+import math
+import collections
 from http.server import BaseHTTPRequestHandler
 
-# Papka yo'llarini qo'shamiz
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-if parent_dir not in sys.path:
-    sys.path.append(parent_dir)
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(CURRENT_DIR)
 
-import joblib
-from model_trainer import analyze_review
+WEIGHTS_FILE = os.path.join(PARENT_DIR, "model_weights.json")
+if not os.path.exists(WEIGHTS_FILE):
+    WEIGHTS_FILE = os.path.join(CURRENT_DIR, "model_weights.json")
 
-MODEL_FILE = os.path.join(parent_dir, "model.joblib")
-METRICS_FILE = os.path.join(parent_dir, "metrics.joblib")
+_model_data = None
 
-_model_pkg = None
-_metrics = None
-
-def get_model():
-    global _model_pkg, _metrics
-    if _model_pkg is None and os.path.exists(MODEL_FILE):
+def get_model_data():
+    global _model_data
+    if _model_data is None and os.path.exists(WEIGHTS_FILE):
         try:
-            _model_pkg = joblib.load(MODEL_FILE)
+            with open(WEIGHTS_FILE, 'r', encoding='utf-8') as f:
+                _model_data = json.load(f)
         except Exception as e:
-            print("Model load error:", e)
-    if _metrics is None and os.path.exists(METRICS_FILE):
-        try:
-            _metrics = joblib.load(METRICS_FILE)
-        except Exception as e:
-            print("Metrics load error:", e)
-    return _model_pkg, _metrics
+            print("Error loading weights:", e)
+    return _model_data
+
+def predict_sentiment_exact(text, model_data):
+    features = model_data.get('features', {})
+    intercept = model_data.get('intercept', 0.0)
+    
+    clean = re.sub(r'[^a-zA-Z0-9\s]', ' ', text.lower())
+    words = clean.split()
+    tokens = list(words)
+    for i in range(len(words) - 1):
+        tokens.append(f"{words[i]} {words[i+1]}")
+        
+    counts = collections.Counter(tokens)
+    vec_dict = {}
+    sum_sq = 0.0
+    
+    for t, count in counts.items():
+        if t in features:
+            idx, idf_val, coef = features[t]
+            val = (1.0 + math.log(count)) * idf_val
+            vec_dict[t] = (val, coef)
+            sum_sq += val * val
+            
+    if sum_sq == 0.0:
+        prob = 0.5
+        words_impact = []
+    else:
+        norm = math.sqrt(sum_sq)
+        dot = intercept
+        words_impact = []
+        for t, (val, coef) in vec_dict.items():
+            normalized_val = val / norm
+            impact = normalized_val * coef
+            dot += impact
+            words_impact.append((t, impact))
+            
+        prob = 1.0 / (1.0 + math.exp(-dot))
+        
+    is_positive = prob >= 0.5
+    score_10 = round(1.0 + prob * 9.0, 1)
+    star_count = max(1, min(5, int(round(score_10 / 2.0))))
+    stars_visual = "⭐" * star_count + "☆" * (5 - star_count)
+    
+    words_impact.sort(key=lambda x: x[1], reverse=True)
+    top_pos = [w for w, score in words_impact if score > 0][:5]
+    top_neg = [w for w, score in reversed(words_impact) if score < 0][:5]
+    
+    return {
+        'sentiment': "Ijobiy (Positive)" if is_positive else "Salbiy (Negative)",
+        'is_positive': is_positive,
+        'probability_positive': prob,
+        'probability_negative': 1.0 - prob,
+        'confidence': prob if is_positive else (1.0 - prob),
+        'score_10': score_10,
+        'stars': stars_visual,
+        'star_count': star_count,
+        'top_positive_words': top_pos,
+        'top_negative_words': top_neg
+    }
 
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -46,12 +97,11 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         
-        _, metrics = get_model()
         response_data = {
             "status": "online",
-            "message": "CineAnalytics AI API is running on Vercel",
+            "message": "CineAnalytics AI API is running on Vercel (Optimized Pure Python Runtime)",
             "dataset": "yasserh/imdb-movie-ratings-sentiment-analysis",
-            "metrics": metrics or {
+            "metrics": {
                 "accuracy": 0.8953,
                 "precision": 0.8901,
                 "recall": 0.9017,
@@ -68,13 +118,13 @@ class handler(BaseHTTPRequestHandler):
             data = json.loads(body.decode('utf-8'))
             text = data.get('text', '')
             
-            model_pkg, _ = get_model()
+            m_data = get_model_data()
             if not text or not text.strip():
                 result = {"error": "Text is empty"}
-            elif not model_pkg:
-                result = {"error": "Model could not be loaded"}
+            elif not m_data:
+                result = {"error": "Model weights file not found"}
             else:
-                result = analyze_review(text, model_pkg)
+                result = predict_sentiment_exact(text, m_data)
                 
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
@@ -87,4 +137,3 @@ class handler(BaseHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
-
