@@ -1,6 +1,12 @@
 # 🎬 CineAnalytics — Kino va Filmlar Reytingini Tahlil Qilish Portali
 
-Ushbu loyiha **IMDb** ning 40,000 ta kino va filmlar sharhlari dataseti asosida ishlaydigan zamonaviy, interaktiv tahlil va sun'iy intellekt (NLP) veb-platformasidir.
+[![CineAnalytics CI](https://github.com/javohirshokirjonov58-spec/Filmlar/actions/workflows/ci.yml/badge.svg)](https://github.com/javohirshokirjonov58-spec/Filmlar/actions/workflows/ci.yml)
+[![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.66.1-FF4B4B.svg)](https://streamlit.io/)
+[![Vercel](https://img.shields.io/badge/Vercel-Ready-black.svg?logo=vercel)](https://vercel.com/)
+[![Accuracy](https://img.shields.io/badge/Model%20Accuracy-89.53%25-brightgreen.svg)]()
+
+Ushbu platforma **IMDb** ning 40,000 ta kino va filmlar sharhlari dataseti asosida ishlaydigan zamonaviy, interaktiv tahlil va Sun'iy Intellekt (NLP) veb-portalidir.
 
 ---
 
@@ -8,7 +14,7 @@ Ushbu loyiha **IMDb** ning 40,000 ta kino va filmlar sharhlari dataseti asosida 
 
 Dataset **KaggleHub** orqali avtomatik tarzda yuklanadi:
 - **Dataset nomi:** `yasserh/imdb-movie-ratings-sentiment-analysis`
-- **Tarkibi:** 40,000 ta haqiqiy IMDb sharhlari (50% ijobiy, 50% salbiy)
+- **Tarkibi:** 40,000 ta real IMDb sharhlari (50% ijobiy, 50% salbiy)
 
 ### Datasetga ulanish kodi:
 ```python
@@ -16,13 +22,14 @@ import kagglehub
 import pandas as pd
 import os
 
-# Download latest version
+# 1. KaggleHub orqali yuklab olish
 path = kagglehub.dataset_download("yasserh/imdb-movie-ratings-sentiment-analysis")
 print("Path to dataset files:", path)
 
-# Ma'lumotlarni o'qish
-df = pd.read_csv(os.path.join(path, "movie.csv"))
-print(df.head())
+# 2. Ma'lumotlarni o'qish
+csv_file = os.path.join(path, "movie.csv")
+df = pd.read_csv(csv_file)
+print("Dataset shakli:", df.shape)
 ```
 
 ---
@@ -49,23 +56,23 @@ print(df.head())
    - Filterlar va natijalarni CSV formatida yuklab olish.
 
 5. **📈 Model Metriki:**
-   - TF-IDF + Logistic Regression arxitekturasi: **89.53% aniqlik (Accuracy)**.
+   - TF-IDF + Logistic Regression arxitekturasi: **89.53% aniqlik (Accuracy)**, **89.58% F1-score**.
    - Interaktiv Chalkashlik matritsasi (Confusion Matrix).
 
 ---
 
 ## 💻 Qanday Ishga Tushiriladi?
 
-### 1-usul (Eng oson):
-Loyiha papkasidagi **`run_app.bat`** faylini ikki marta bosing. Sayt avtomatik ravishda brauzeringizda ochiladi.
+### 1-usul (Kompyuterda - Eng oson):
+Loyiha papkasidagi **`run_app.bat`** faylini ikki marta bosing. Sayt avtomatik ravishda brauzeringizda ochiladi:
+`http://localhost:8501`
 
 ### 2-usul (Buyruqlar qatori orqali):
 ```bash
 streamlit run app.py
 ```
-yoki:
-```bash
-"C:\Users\user\AppData\Local\Programs\Python\Python314\python.exe" -m streamlit run app.py
-```
-Brauzer manzili: `http://localhost:8501`
 
+### 3-usul (Vercel orqali Bulutda):
+1. [vercel.com/new](https://vercel.com/new) sahifasiga kiring.
+2. `javohirshokirjonov58-spec/Filmlar` repozitoriyasini tanlang va **Deploy** tugmasini bosing.
+3. Loyihangiz bir zumda dunyo bo'ylab jonli ishlaydi!
